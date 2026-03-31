@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History - NIDS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { "dark-bg": "#000000" },
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] } } }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>body { font-family: "Inter", sans-serif; background: #000; color: #fff; }</style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-40 px-6 py-4 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="/" class="text-2xl font-bold tracking-tight hover:opacity-80">
+        NIDS <span class="text-xs font-normal text-gray-500 ml-1">by ACEGM</span>
+      </a>
+      <div class="flex items-center space-x-1 bg-white/5 rounded-full p-1 border border-white/10">
+        <a href="/"               data-nav="/" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Home</a>
+        <a href="/analyze.html"   data-nav="analyze" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Analyze</a>
+        <a href="/dashboard.html" data-nav="dashboard" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Dashboard</a>
+        <a href="/history.html"   data-nav="history" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">History</a>
+      </div>
+      <a href="/analyze.html" class="px-6 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-gray-200 transition-all">
+        Start Analysis →
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="min-h-screen px-6 pt-32 pb-20">
+      <div class="max-w-7xl mx-auto">
+
+        <div class="mb-12">
+          <h1 class="text-6xl font-black mb-4">Detection History</h1>
+          <p class="text-xl text-gray-400">Complete log of all batch analyses</p>
+        </div>
+
+        <!-- Summary strip -->
+        <div id="summary-strip" class="hidden bg-white/5 rounded-2xl border border-white/10 p-6 mb-8">
+          <div class="grid grid-cols-3 gap-6">
+            <div>
+              <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Analyses</p>
+              <p id="sum-analyses" class="text-3xl font-bold">0</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Records</p>
+              <p id="sum-records" class="text-3xl font-bold">0</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Malicious</p>
+              <p id="sum-malicious" class="text-3xl font-bold text-red-400">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- History table -->
+        <div id="history-table" class="bg-white/5 rounded-3xl border border-white/10 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-white/5 border-b border-white/10">
+                <tr class="text-left text-xs text-gray-500 uppercase tracking-widest">
+                  <th class="px-6 py-4">ID</th>
+                  <th class="px-6 py-4">Timestamp</th>
+                  <th class="px-6 py-4">Filename</th>
+                  <th class="px-6 py-4">Total</th>
+                  <th class="px-6 py-4">Malicious</th>
+                  <th class="px-6 py-4">Benign</th>
+                  <th class="px-6 py-4">Attack Rate</th>
+                </tr>
+              </thead>
+              <tbody id="history-body" class="divide-y divide-white/5">
+                <tr>
+                  <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="text-lg font-medium mb-2">Loading history...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Expanded detail panel (hidden by default) -->
+        <div id="detail-panel" class="hidden mt-6 bg-white/5 rounded-3xl border border-white/10 p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold" id="detail-title">Sample Detections</h2>
+            <button onclick="closeDetail()" class="text-gray-400 hover:text-white transition-all text-sm">✕ Close</button>
+          </div>
+          <div class="space-y-3" id="detail-body"></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  <script src="main.js"></script>
+  <script>
+    "use strict";
+
+    async function loadHistory() {
+        try {
+            const res  = await fetch("/api/history");
+            const data = await res.json();
+            renderHistory(data.history || []);
+        } catch {
+            document.getElementById("history-body").innerHTML =
+                `<tr><td colspan="7" class="px-6 py-12 text-center text-gray-500">Could not reach backend.</td></tr>`;
+        }
+    }
+
+    function renderHistory(items) {
+        if (items.length === 0) {
+            document.getElementById("history-body").innerHTML = `
+              <tr>
+                <td colspan="7" class="px-6 py-16 text-center">
+                  <svg class="w-14 h-14 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 class="text-2xl font-bold mb-2">No Analysis History</h3>
+                  <p class="text-gray-400 mb-6">Upload a CSV file to start detecting intrusions</p>
+                  <a href="/analyze.html"
+                     class="inline-block px-8 py-3 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-all">
+                    Analyze Traffic →
+                  </a>
+                </td>
+              </tr>
+            `;
+            return;
+        }
+
+        // Summary
+        const totalRecords   = items.reduce((s, i) => s + i.total, 0);
+        const totalMalicious = items.reduce((s, i) => s + i.malicious, 0);
+        document.getElementById("sum-analyses").textContent  = formatNumber(items.length);
+        document.getElementById("sum-records").textContent   = formatNumber(totalRecords);
+        document.getElementById("sum-malicious").textContent = formatNumber(totalMalicious);
+        document.getElementById("summary-strip").classList.remove("hidden");
+
+        document.getElementById("history-body").innerHTML = items.map(item => {
+            const rate = item.total ? ((item.malicious / item.total) * 100).toFixed(1) : "0";
+            const rateBadge = item.malicious > 0
+                ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">${rate}%</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">0%</span>`;
+            return `<tr class="hover:bg-white/5 transition-all cursor-pointer" onclick="showDetail(${item.id})">
+              <td class="px-6 py-4 text-gray-400 font-mono text-xs">#${item.id}</td>
+              <td class="px-6 py-4 text-sm">${item.timestamp}</td>
+              <td class="px-6 py-4 font-medium">${item.filename}</td>
+              <td class="px-6 py-4">${formatNumber(item.total)}</td>
+              <td class="px-6 py-4 text-red-400 font-semibold">${formatNumber(item.malicious)}</td>
+              <td class="px-6 py-4 text-green-400 font-semibold">${formatNumber(item.benign)}</td>
+              <td class="px-6 py-4">${rateBadge}</td>
+            </tr>`;
+        }).join("");
+
+        window._historyData = items;
+    }
+
+    function showDetail(id) {
+        const item = (window._historyData || []).find(i => i.id === id);
+        if (!item || !item.sample) return;
+
+        document.getElementById("detail-title").textContent = `Sample from: ${item.filename}`;
+        document.getElementById("detail-body").innerHTML = item.sample.map(r => `
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between hover:bg-white/10 transition-all">
+            <div>
+              <p class="font-semibold">${r.prediction}</p>
+              <p class="text-sm text-gray-400">Confidence: ${(r.confidence * 100).toFixed(2)}%</p>
+            </div>
+            ${severityBadge(r.severity, r.is_malicious ? "⚠ Malicious" : "✓ Benign")}
+          </div>
+        `).join("");
+
+        document.getElementById("detail-panel").classList.remove("hidden");
+        document.getElementById("detail-panel").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function closeDetail() {
+        document.getElementById("detail-panel").classList.add("hidden");
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

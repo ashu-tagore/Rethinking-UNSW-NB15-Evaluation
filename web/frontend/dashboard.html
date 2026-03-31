@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - NIDS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { "dark-bg": "#000000" },
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] } } }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>body { font-family: "Inter", sans-serif; background: #000; color: #fff; }</style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-40 px-6 py-4 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="/" class="text-2xl font-bold tracking-tight hover:opacity-80">
+        NIDS <span class="text-xs font-normal text-gray-500 ml-1">by ACEGM</span>
+      </a>
+      <div class="flex items-center space-x-1 bg-white/5 rounded-full p-1 border border-white/10">
+        <a href="/"               data-nav="/" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Home</a>
+        <a href="/analyze.html"   data-nav="analyze" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Analyze</a>
+        <a href="/dashboard.html" data-nav="dashboard" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Dashboard</a>
+        <a href="/history.html"   data-nav="history" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">History</a>
+      </div>
+      <a href="/analyze.html" class="px-6 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-gray-200 transition-all">
+        Start Analysis →
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="min-h-screen px-6 pt-32 pb-20">
+      <div class="max-w-7xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-10">
+          <div>
+            <h1 class="text-6xl font-black mb-2">Dashboard</h1>
+            <p class="text-gray-400 flex items-center gap-2">
+              Live network intrusion detection
+              <span id="capture-badge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-medium">
+                <span class="dot-live"></span> Capturing
+              </span>
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input id="iface-input" type="text" placeholder="Interface (e.g. eth0)"
+                   class="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-white/30 w-48" />
+            <button id="btn-start" onclick="startCapture()"
+                    class="px-6 py-2 bg-white text-black rounded-full text-sm font-semibold hover:bg-gray-200 transition-all">
+              Start Capture
+            </button>
+            <button id="btn-stop" onclick="stopCapture()" disabled
+                    class="px-6 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm font-semibold hover:bg-red-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              Stop
+            </button>
+          </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white/5 rounded-2xl border border-white/10 p-5 hover:bg-white/10 transition-all">
+            <p class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Flows Analysed</p>
+            <p id="stat-total" class="text-4xl font-bold">0</p>
+          </div>
+          <div class="bg-red-500/10 rounded-2xl border border-red-500/20 p-5">
+            <p class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Attacks</p>
+            <p id="stat-attacks" class="text-4xl font-bold text-red-400">0</p>
+          </div>
+          <div class="bg-green-500/10 rounded-2xl border border-green-500/20 p-5">
+            <p class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Normal</p>
+            <p id="stat-normal" class="text-4xl font-bold text-green-400">0</p>
+          </div>
+          <div class="bg-blue-500/10 rounded-2xl border border-blue-500/20 p-5">
+            <p class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Attack Rate</p>
+            <p id="stat-rate" class="text-4xl font-bold text-blue-400">0%</p>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="md:col-span-2 bg-white/5 rounded-2xl border border-white/10 p-6">
+            <p class="text-xs text-gray-400 uppercase tracking-widest mb-4">Traffic Timeline</p>
+            <div class="chart-container"><canvas id="chart-timeline"></canvas></div>
+          </div>
+          <div class="bg-white/5 rounded-2xl border border-white/10 p-6">
+            <p class="text-xs text-gray-400 uppercase tracking-widest mb-4">Class Breakdown</p>
+            <div class="chart-container"><canvas id="chart-breakdown"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Alert feed -->
+        <div class="bg-white/5 rounded-3xl border border-white/10 p-8 mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">Alert Feed</h2>
+            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+              <input type="checkbox" id="chk-attacks" onchange="renderAlerts()" class="rounded" />
+              Attacks only
+            </label>
+          </div>
+          <div class="overflow-x-auto max-h-80 overflow-y-auto">
+            <table class="w-full text-sm">
+              <thead class="sticky top-0 bg-black/80">
+                <tr class="text-left text-xs text-gray-500 uppercase tracking-widest border-b border-white/10">
+                  <th class="pb-3 pr-4">Time</th>
+                  <th class="pb-3 pr-4">Source</th>
+                  <th class="pb-3 pr-4">Destination</th>
+                  <th class="pb-3 pr-4">Proto</th>
+                  <th class="pb-3 pr-4">Label</th>
+                  <th class="pb-3 pr-4">Conf.</th>
+                  <th class="pb-3">Bytes</th>
+                </tr>
+              </thead>
+              <tbody id="alert-body" class="divide-y divide-white/5">
+                <tr>
+                  <td colspan="7" class="py-8 text-center text-gray-500">No events yet — start capture to see traffic</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Model performance section -->
+        <div class="bg-white/5 rounded-3xl border border-white/10 p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">Model Performance</h2>
+            <select id="exp-select" onchange="loadStats()"
+                    class="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+            </select>
+          </div>
+
+          <!-- Macro stat cards -->
+          <div id="perf-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+          <!-- Per-class chart -->
+          <div class="chart-container" style="height:320px">
+            <canvas id="chart-perclass"></canvas>
+          </div>
+
+          <!-- Per-class table -->
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-xs text-gray-500 uppercase tracking-widest border-b border-white/10">
+                  <th class="pb-3 pr-6">Class</th>
+                  <th class="pb-3 pr-6">Precision</th>
+                  <th class="pb-3 pr-6">Recall</th>
+                  <th class="pb-3 pr-6">F1</th>
+                  <th class="pb-3">Support</th>
+                </tr>
+              </thead>
+              <tbody id="perclass-body" class="divide-y divide-white/5"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  <script src="main.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

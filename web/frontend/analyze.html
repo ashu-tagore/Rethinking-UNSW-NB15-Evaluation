@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analyze Traffic - NIDS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { "dark-bg": "#000000" },
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] } } }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>body { font-family: "Inter", sans-serif; background: #000; color: #fff; }</style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-40 px-6 py-4 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="/" class="text-2xl font-bold tracking-tight hover:opacity-80">
+        NIDS <span class="text-xs font-normal text-gray-500 ml-1">by ACEGM</span>
+      </a>
+      <div class="flex items-center space-x-1 bg-white/5 rounded-full p-1 border border-white/10">
+        <a href="/"               data-nav="/" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Home</a>
+        <a href="/analyze.html"   data-nav="analyze" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Analyze</a>
+        <a href="/dashboard.html" data-nav="dashboard" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">Dashboard</a>
+        <a href="/history.html"   data-nav="history" class="px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all text-white">History</a>
+      </div>
+      <a href="/analyze.html" class="px-6 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-gray-200 transition-all">
+        Start Analysis →
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="min-h-screen px-6 pt-32 pb-20">
+      <div class="max-w-4xl mx-auto">
+
+        <div class="text-center mb-12">
+          <h1 class="text-6xl md:text-7xl font-black mb-4">Analyze Traffic</h1>
+          <p class="text-xl text-gray-400">Upload network traffic data to detect intrusions</p>
+        </div>
+
+        <!-- Upload card -->
+        <div class="bg-white/5 rounded-3xl border border-white/10 p-12 mb-8">
+          <div id="drop-zone"
+               class="border-2 border-dashed border-white/20 rounded-2xl p-16 text-center hover:border-white/40 hover:bg-white/5 transition-all cursor-pointer">
+
+            <div id="upload-prompt">
+              <svg class="w-20 h-20 mx-auto mb-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p class="text-2xl font-semibold mb-2">Drop your CSV here</p>
+              <p class="text-gray-400 mb-6">or click to browse</p>
+              <p class="text-sm text-gray-500">Supported format: CSV with UNSW-NB15 features</p>
+            </div>
+
+            <div id="loading-state" class="hidden">
+              <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+              <p class="text-xl font-semibold">Analyzing traffic...</p>
+              <p class="text-gray-400 mt-2">Processing your file</p>
+            </div>
+          </div>
+
+          <input type="file" id="file-input" accept=".csv" class="hidden" />
+
+          <!-- File info -->
+          <div id="file-info" class="hidden mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <svg class="w-6 h-6 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p class="font-medium" id="file-name">File selected</p>
+                  <p class="text-sm text-gray-400" id="file-size">0 KB</p>
+                </div>
+              </div>
+              <button id="remove-file" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+            </div>
+          </div>
+
+          <button id="upload-btn"
+                  class="hidden w-full mt-6 px-8 py-4 bg-white text-black rounded-full font-semibold text-lg hover:bg-gray-200 hover:scale-105 transition-all">
+            Analyze File →
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div id="results-container" class="hidden"></div>
+
+        <!-- Info box -->
+        <div class="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
+          <h3 class="font-semibold mb-2 flex items-center text-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            CSV format
+          </h3>
+          <p class="text-sm text-gray-400">
+            Your CSV must include the 49 UNSW-NB15 feature columns. Use
+            <a href="https://www.unb.ca/cic/research/applications.html" target="_blank" rel="noopener"
+               class="text-blue-400 hover:text-blue-300 underline">CICFlowMeter</a>
+            to convert PCAP files. Label and attack_cat columns are ignored if present.
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  <script src="main.js"></script>
+  <script src="upload.js"></script>
+</body>
+</html>
